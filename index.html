@@ -7,337 +7,357 @@
     <title>S.H.E Wellness Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; }
-        .coral { color: #E8766D; }
-        .coral-bg { background: #E8766D; }
-        .coral-light { background: #FEF0EF; }
-        .coral-border { border-color: #E8766D; }
-        .btn { background: #E8766D; transition: 0.3s; }
-        .btn:hover { background: #D66960; }
-        .nav-item { cursor: pointer; transition: 0.2s; }
-        .nav-item.active { background: #E8766D; color: white; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .she-coral { color: #E8766D; }
+        .she-coral-bg { background-color: #E8766D; }
+        .she-coral-light { background-color: #FEF0EF; }
+        .she-coral-border { border-color: #E8766D; }
+        .she-button { background-color: #E8766D; transition: all 0.3s; }
+        .she-button:hover { background-color: #D66960; }
+        .nav-item.active { background-color: #E8766D; color: white; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 2px solid #E8766D; z-index: 1000; }
+        .content-area { padding-bottom: 80px; }
     </style>
 </head>
 <body class="bg-white">
-    <div id="app"></div>
+    <div id="app" class="content-area p-4"></div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <div class="flex justify-around py-3">
+            <button onclick="app.nav('home')" id="nav-home" class="nav-item flex flex-col items-center px-4 py-2 rounded-lg active">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <span class="text-xs mt-1">Home</span>
+            </button>
+            <button onclick="app.nav('measure')" id="nav-measure" class="nav-item flex flex-col items-center px-4 py-2 rounded-lg">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>
+                <span class="text-xs mt-1">Track</span>
+            </button>
+            <button onclick="app.nav('goals')" id="nav-goals" class="nav-item flex flex-col items-center px-4 py-2 rounded-lg">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                <span class="text-xs mt-1">Goals</span>
+            </button>
+            <button onclick="app.nav('habits')" id="nav-habits" class="nav-item flex flex-col items-center px-4 py-2 rounded-lg">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="text-xs mt-1">Habits</span>
+            </button>
+        </div>
+    </div>
+
     <script>
-        const icons = {
-            home: '🏠', ruler: '📏', target: '🎯', smile: '😊', book: '📖', camera: '📷',
-            plus: '➕', check: '✓', x: '✕'
-        };
+    class App {
+        constructor() {
+            this.page = 'home';
+            this.data = {
+                measures: JSON.parse(localStorage.getItem('she_m') || '[]'),
+                goals: JSON.parse(localStorage.getItem('she_g') || '[]'),
+                habits: JSON.parse(localStorage.getItem('she_h') || '[]'),
+                logs: JSON.parse(localStorage.getItem('she_l') || '{}')
+            };
+            this.form = null;
+            this.render();
+        }
 
-        class Hub {
-            constructor() {
-                this.section = 'home';
-                this.data = JSON.parse(localStorage.getItem('she_data') || '{"measurements":[],"goals":[],"habits":[],"moods":[],"journal":[],"photos":[]}');
-                this.render();
-            }
+        nav(page) {
+            this.page = page;
+            this.form = null;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`nav-${page}`).classList.add('active');
+            this.render();
+        }
 
-            save() { localStorage.setItem('she_data', JSON.stringify(this.data)); }
+        render() {
+            const el = document.getElementById('app');
+            el.innerHTML = this[`render_${this.page}`]();
+        }
 
-            nav(s) { this.section = s; this.render(); }
+        render_home() {
+            const cm = this.data.measures.length > 1 ? this.calcTotal() : 0;
+            const goals = this.data.goals.filter(g => !g.done).length;
+            const habits = this.todayHabits();
+            
+            return `
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white rounded-2xl shadow-lg p-8 mb-6 text-center border-2 she-coral-border">
+                        <h1 class="text-4xl font-bold she-coral mb-2">S.H.E</h1>
+                        <p class="she-coral text-sm font-medium tracking-widest">SISTERHOOD • HEALING • ELEVATION</p>
+                    </div>
 
-            render() {
-                document.getElementById('app').innerHTML = `
-                    <div class="pb-20">
-                        <div class="coral-bg text-white p-6 text-center sticky top-0 z-10 shadow-lg">
-                            <h1 class="text-3xl font-bold">S.H.E</h1>
-                            <p class="text-xs tracking-widest opacity-90">SISTERHOOD • HEALING • ELEVATION</p>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                        <h2 class="text-2xl font-bold mb-4">Welcome Back! 👋🏾</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="she-coral-light rounded-xl p-4 border she-coral-border">
+                                <p class="text-sm text-gray-600">Total Lost</p>
+                                <p class="text-2xl font-bold she-coral">${cm} cm</p>
+                            </div>
+                            <div class="she-coral-light rounded-xl p-4 border she-coral-border">
+                                <p class="text-sm text-gray-600">Active Goals</p>
+                                <p class="text-2xl font-bold she-coral">${goals}</p>
+                            </div>
+                            <div class="she-coral-light rounded-xl p-4 border she-coral-border">
+                                <p class="text-sm text-gray-600">Today</p>
+                                <p class="text-2xl font-bold she-coral">${habits.done}/${habits.total}</p>
+                            </div>
+                            <div class="she-coral-light rounded-xl p-4 border she-coral-border">
+                                <p class="text-sm text-gray-600">Entries</p>
+                                <p class="text-2xl font-bold she-coral">${this.data.measures.length}</p>
+                            </div>
                         </div>
-                        <div class="p-4 max-w-4xl mx-auto">${this.getSection()}</div>
-                        <div class="fixed bottom-0 w-full bg-white border-t-2 coral-border shadow-lg">
-                            <div class="flex justify-around py-2">
-                                ${['home','measurements','goals','mood','journal','photos'].map(s => 
-                                    `<div class="nav-item flex flex-col items-center p-2 rounded ${this.section===s?'active':''}" onclick="app.nav('${s}')">
-                                        <span class="text-xl">${icons[s==='measurements'?'ruler':s==='goals'?'target':s==='mood'?'smile':s==='journal'?'book':s==='photos'?'camera':'home']}</span>
-                                        <span class="text-xs mt-1">${s[0].toUpperCase()+s.slice(1)}</span>
-                                    </div>`
+                    </div>
+
+                    <div class="space-y-3">
+                        <button onclick="app.nav('measure')" class="w-full she-button text-white py-3 rounded-lg font-medium">
+                            📏 Add Measurements
+                        </button>
+                        <button onclick="app.nav('goals')" class="w-full border-2 she-coral-border she-coral py-3 rounded-lg font-medium">
+                            🎯 Set a Goal
+                        </button>
+                        <button onclick="app.nav('habits')" class="w-full border-2 she-coral-border she-coral py-3 rounded-lg font-medium">
+                            ✅ Track Habits
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        render_measure() {
+            if (this.form === 'measure') return this.renderMeasureForm();
+            
+            return `
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Measurements</h2>
+                            <button onclick="app.form='measure'; app.render()" class="she-button text-white px-4 py-2 rounded-lg">+ Add</button>
+                        </div>
+                    </div>
+                    ${this.data.measures.length === 0 ? '<div class="bg-white rounded-2xl shadow-lg p-12 text-center"><p class="text-gray-600">No entries yet</p></div>' : 
+                    this.data.measures.map((m, i) => `
+                        <div class="bg-white rounded-xl shadow-lg p-4 mb-3">
+                            <p class="font-bold mb-3">${new Date(m.date).toLocaleDateString('en-ZA')}</p>
+                            <div class="grid grid-cols-3 gap-2 text-sm">
+                                ${['waist','hips','bust','leftArm','rightArm','leftThigh','rightThigh','leftCalf','rightCalf','weight'].map(k => 
+                                    m[k] ? `<div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-600">${k}</p><p class="font-bold">${m[k]} ${k==='weight'?'kg':'cm'}</p></div>` : ''
                                 ).join('')}
                             </div>
                         </div>
-                    </div>
-                `;
-            }
+                    `).join('')}
+                </div>
+            `;
+        }
 
-            getSection() {
-                switch(this.section) {
-                    case 'home': return this.home();
-                    case 'measurements': return this.measurements();
-                    case 'goals': return this.goalsHabits();
-                    case 'mood': return this.mood();
-                    case 'journal': return this.journal();
-                    case 'photos': return this.photos();
-                }
-            }
-
-            home() {
-                const goals = this.data.goals.filter(g=>!g.done).length;
-                const today = new Date().toISOString().split('T')[0];
-                const habits = this.data.habits.filter(h=>h.logs?.find(l=>l.date===today&&l.done)).length;
-                
-                return `
-                    <h2 class="text-2xl font-bold mb-4">Welcome Back! 💪🏾</h2>
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        ${[['Active Goals',goals],['Habits Today',habits+'/'+this.data.habits.length],['Journal',this.data.journal.length],['Photos',this.data.photos.length]].map(([l,v])=>
-                            `<div class="bg-white rounded-xl shadow-lg p-4 border-2 coral-border">
-                                <p class="text-sm text-gray-600">${l}</p>
-                                <p class="text-3xl font-bold coral">${v}</p>
-                            </div>`
-                        ).join('')}
+        renderMeasureForm() {
+            return `
+                <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4">Add Entry</h2>
+                    <input type="date" id="date" value="${new Date().toISOString().split('T')[0]}" class="w-full px-3 py-2 border-2 rounded-lg mb-3">
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        ${['waist','hips','bust','leftArm','rightArm','leftThigh','rightThigh','leftCalf','rightCalf','weight'].map(f => `
+                            <input type="number" step="0.1" id="${f}" placeholder="${f} ${f==='weight'?'(kg)':'(cm)'}" class="px-3 py-2 border-2 rounded-lg">
+                        `).join('')}
                     </div>
-                    ${this.data.moods[0]?`<div class="bg-white rounded-xl shadow-lg p-4 mb-4">
-                        <h3 class="font-bold mb-2">Latest Mood</h3>
-                        <p class="text-4xl">${this.data.moods[0].emoji}</p>
-                        <p class="text-sm text-gray-600">${this.data.moods[0].feeling}</p>
-                    </div>`:''}
-                    <div class="bg-white rounded-xl shadow-lg p-4">
-                        <h3 class="font-bold mb-3">Quick Actions</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            ${['measurements','mood','journal','photos'].map(s=>
-                                `<button onclick="app.nav('${s}')" class="btn text-white py-3 rounded-lg font-medium">
-                                    ${s[0].toUpperCase()+s.slice(1)}
-                                </button>`
-                            ).join('')}
+                    <textarea id="notes" rows="2" placeholder="Notes" class="w-full px-3 py-2 border-2 rounded-lg mb-3"></textarea>
+                    <div class="flex gap-3">
+                        <button onclick="app.saveMeasure()" class="flex-1 she-button text-white py-3 rounded-lg">Save</button>
+                        <button onclick="app.form=null; app.render()" class="px-6 py-3 border-2 she-coral-border she-coral rounded-lg">Cancel</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        saveMeasure() {
+            const m = {id: Date.now(), date: document.getElementById('date').value};
+            ['waist','hips','bust','leftArm','rightArm','leftThigh','rightThigh','leftCalf','rightCalf','weight'].forEach(f => {
+                m[f] = parseFloat(document.getElementById(f).value) || 0;
+            });
+            m.notes = document.getElementById('notes').value;
+            this.data.measures.unshift(m);
+            localStorage.setItem('she_m', JSON.stringify(this.data.measures));
+            this.form = null;
+            this.render();
+        }
+
+        render_goals() {
+            if (this.form === 'goal') return this.renderGoalForm();
+            
+            const active = this.data.goals.filter(g => !g.done);
+            const done = this.data.goals.filter(g => g.done);
+            
+            return `
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">🎯 Goals</h2>
+                            <button onclick="app.form='goal'; app.render()" class="she-button text-white px-4 py-2 rounded-lg">+ New</button>
                         </div>
                     </div>
-                `;
-            }
-
-            measurements() {
-                return `
-                    <h2 class="text-2xl font-bold mb-4">Body Measurements</h2>
-                    <button onclick="app.addMeasurement()" class="w-full btn text-white py-3 rounded-lg font-medium mb-4">
-                        ${icons.plus} Add Entry
-                    </button>
-                    ${this.data.measurements.slice(0,10).map(m=>`
-                        <div class="bg-white rounded-xl shadow-lg p-4 mb-3">
-                            <p class="font-bold coral">${new Date(m.date).toLocaleDateString()}</p>
-                            <p class="text-sm text-gray-600 mt-1">Waist: ${m.waist}cm • Hips: ${m.hips}cm • Weight: ${m.weight}kg</p>
-                        </div>
-                    `).join('')||'<p class="text-center text-gray-500 mt-8">No entries yet!</p>'}
-                `;
-            }
-
-            goalsHabits() {
-                const today = new Date().toISOString().split('T')[0];
-                return `
-                    <div class="mb-8">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-2xl font-bold">Goals</h2>
-                            <button onclick="app.addGoal()" class="btn text-white px-4 py-2 rounded-lg">${icons.plus}</button>
-                        </div>
-                        ${this.data.goals.map((g,i)=>`
-                            <div class="bg-white rounded-xl shadow-lg p-4 mb-3 ${g.done?'opacity-50':''}">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex-1">
-                                        <h3 class="font-bold ${g.done?'line-through':''}">${g.title}</h3>
-                                        <p class="text-sm text-gray-600">${g.desc||''}</p>
-                                        <p class="text-xs coral mt-1">Target: ${new Date(g.target).toLocaleDateString()}</p>
-                                    </div>
-                                    <button onclick="app.toggleGoal(${i})" class="${g.done?'coral-bg':'bg-gray-300'} text-white w-8 h-8 rounded-full">
-                                        ${icons.check}
-                                    </button>
+                    ${this.data.goals.length === 0 ? '<div class="bg-white rounded-xl shadow-lg p-12 text-center"><p class="text-gray-600">No goals yet</p></div>' : ''}
+                    ${active.map(g => `
+                        <div class="bg-white rounded-xl shadow-lg p-4 mb-3 border-2 she-coral-border">
+                            <div class="flex justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg">${g.title}</h3>
+                                    <p class="text-sm text-gray-600">${g.desc}</p>
+                                    <p class="text-xs she-coral mt-2">🗓 ${new Date(g.target).toLocaleDateString('en-ZA')}</p>
                                 </div>
-                            </div>
-                        `).join('')||'<p class="text-center text-gray-500 py-4">No goals yet!</p>'}
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-2xl font-bold">Habits</h2>
-                            <button onclick="app.addHabit()" class="btn text-white px-4 py-2 rounded-lg">${icons.plus}</button>
-                        </div>
-                        ${this.data.habits.map((h,i)=>{
-                            const done = h.logs?.find(l=>l.date===today)?.done||false;
-                            return `
-                                <div class="bg-white rounded-xl shadow-lg p-4 mb-3">
-                                    <div class="flex justify-between items-center">
-                                        <div class="flex-1">
-                                            <h3 class="font-bold">${h.name}</h3>
-                                            <p class="text-xs text-gray-500">Streak: ${this.streak(h)} 🔥</p>
-                                        </div>
-                                        <button onclick="app.toggleHabit(${i})" class="${done?'coral-bg':'bg-gray-300'} text-white w-10 h-10 rounded-full">
-                                            ${icons.check}
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')||'<p class="text-center text-gray-500 py-4">No habits yet!</p>'}
-                    </div>
-                `;
-            }
-
-            mood() {
-                const moods = [
-                    ['😊','Great'],['🙂','Good'],['😐','Okay'],['😔','Low'],['😢','Sad']
-                ];
-                return `
-                    <h2 class="text-2xl font-bold mb-4">Mood Tracker</h2>
-                    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                        <h3 class="font-bold mb-4">How are you feeling?</h3>
-                        <div class="grid grid-cols-5 gap-2">
-                            ${moods.map(([e,f])=>
-                                `<button onclick="app.logMood('${e}','${f}')" class="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50">
-                                    <span class="text-4xl mb-1">${e}</span>
-                                    <span class="text-xs text-gray-600">${f}</span>
-                                </button>`
-                            ).join('')}
-                        </div>
-                    </div>
-                    ${this.data.moods.slice(0,10).map(m=>`
-                        <div class="bg-white rounded-xl shadow-lg p-4 mb-3 flex items-center gap-3">
-                            <span class="text-3xl">${m.emoji}</span>
-                            <div class="flex-1">
-                                <p class="font-medium">${m.feeling}</p>
-                                <p class="text-xs text-gray-500">${new Date(m.date).toLocaleString()}</p>
-                                ${m.note?`<p class="text-sm text-gray-600 mt-1">${m.note}</p>`:''}
+                                <button onclick="app.toggleGoal(${g.id})" class="ml-2 w-8 h-8 rounded-full border-2 she-coral-border"></button>
                             </div>
                         </div>
                     `).join('')}
-                `;
-            }
-
-            journal() {
-                return `
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Journal</h2>
-                        <button onclick="app.addJournal()" class="btn text-white px-4 py-2 rounded-lg">${icons.plus}</button>
-                    </div>
-                    ${this.data.journal.map((e,i)=>`
-                        <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
-                            <div class="flex justify-between mb-2">
-                                <h3 class="font-bold coral">${e.title||'Untitled'}</h3>
-                                <button onclick="app.delJournal(${i})" class="text-gray-400 hover:text-red-500">${icons.x}</button>
-                            </div>
-                            <p class="text-sm text-gray-600 whitespace-pre-wrap">${e.content.substring(0,150)}${e.content.length>150?'...':''}</p>
-                            <p class="text-xs text-gray-400 mt-2">${new Date(e.date).toLocaleString()}</p>
+                    ${done.length > 0 ? `<p class="font-bold mt-4 mb-2">Completed ✓</p>` : ''}
+                    ${done.map(g => `
+                        <div class="bg-gray-100 rounded-xl p-4 mb-3 opacity-75">
+                            <h3 class="font-bold line-through">${g.title}</h3>
                         </div>
-                    `).join('')||'<p class="text-center text-gray-500 py-8">No entries yet!</p>'}
-                `;
-            }
+                    `).join('')}
+                </div>
+            `;
+        }
 
-            photos() {
-                return `
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Progress Photos</h2>
-                        <button onclick="app.addPhoto()" class="btn text-white px-4 py-2 rounded-lg">${icons.plus}</button>
+        renderGoalForm() {
+            return `
+                <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4">New Goal</h2>
+                    <input type="text" id="title" placeholder="Goal title" class="w-full px-3 py-2 border-2 rounded-lg mb-3">
+                    <textarea id="desc" rows="2" placeholder="Why is this important?" class="w-full px-3 py-2 border-2 rounded-lg mb-3"></textarea>
+                    <input type="date" id="target" class="w-full px-3 py-2 border-2 rounded-lg mb-3">
+                    <div class="flex gap-3">
+                        <button onclick="app.saveGoal()" class="flex-1 she-button text-white py-3 rounded-lg">Save Goal</button>
+                        <button onclick="app.form=null; app.render()" class="px-6 py-3 border-2 she-coral-border she-coral rounded-lg">Cancel</button>
                     </div>
-                    ${this.data.photos.length?`
-                        <div class="grid grid-cols-2 gap-4">
-                            ${this.data.photos.map(p=>`
-                                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                                    <img src="${p.url}" class="w-full h-48 object-cover">
-                                    <div class="p-2">
-                                        <p class="text-xs text-gray-600">${new Date(p.date).toLocaleDateString()}</p>
-                                        ${p.note?`<p class="text-sm mt-1">${p.note}</p>`:''}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `:'<p class="text-center text-gray-500 py-8">No photos yet!</p>'}
-                `;
-            }
+                </div>
+            `;
+        }
 
-            addMeasurement() {
-                const waist = prompt('Waist (cm):');
-                const hips = prompt('Hips (cm):');
-                const weight = prompt('Weight (kg):');
-                if(waist||hips||weight) {
-                    this.data.measurements.unshift({
-                        date: new Date().toISOString(),
-                        waist: parseFloat(waist)||0,
-                        hips: parseFloat(hips)||0,
-                        weight: parseFloat(weight)||0
-                    });
-                    this.save(); this.render();
-                }
-            }
+        saveGoal() {
+            const g = {
+                id: Date.now(),
+                title: document.getElementById('title').value,
+                desc: document.getElementById('desc').value,
+                target: document.getElementById('target').value,
+                done: false
+            };
+            this.data.goals.push(g);
+            localStorage.setItem('she_g', JSON.stringify(this.data.goals));
+            this.form = null;
+            this.render();
+        }
 
-            addGoal() {
-                const title = prompt('Goal:');
-                if(!title) return;
-                const desc = prompt('Description:');
-                const target = prompt('Target date (YYYY-MM-DD):') || new Date(Date.now()+30*86400000).toISOString().split('T')[0];
-                this.data.goals.unshift({title,desc,target,done:false});
-                this.save(); this.render();
-            }
-
-            toggleGoal(i) {
-                this.data.goals[i].done = !this.data.goals[i].done;
-                this.save(); this.render();
-            }
-
-            addHabit() {
-                const name = prompt('Habit name:');
-                if(name) {
-                    this.data.habits.push({name,logs:[]});
-                    this.save(); this.render();
-                }
-            }
-
-            toggleHabit(i) {
-                const today = new Date().toISOString().split('T')[0];
-                const h = this.data.habits[i];
-                if(!h.logs) h.logs = [];
-                const log = h.logs.find(l=>l.date===today);
-                if(log) log.done = !log.done;
-                else h.logs.push({date:today,done:true});
-                this.save(); this.render();
-            }
-
-            streak(h) {
-                if(!h.logs?.length) return 0;
-                let s = 0;
-                const logs = [...h.logs].sort((a,b)=>new Date(b.date)-new Date(a.date));
-                for(let l of logs) { if(l.done) s++; else break; }
-                return s;
-            }
-
-            logMood(emoji, feeling) {
-                const note = prompt('Any notes?') || '';
-                this.data.moods.unshift({emoji,feeling,note,date:new Date().toISOString()});
-                this.save(); this.render();
-            }
-
-            addJournal() {
-                const title = prompt('Title:');
-                const content = prompt('Write your entry:');
-                if(content) {
-                    this.data.journal.unshift({title,content,date:new Date().toISOString()});
-                    this.save(); this.render();
-                }
-            }
-
-            delJournal(i) {
-                if(confirm('Delete this entry?')) {
-                    this.data.journal.splice(i,1);
-                    this.save(); this.render();
-                }
-            }
-
-            addPhoto() {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = e => {
-                    const file = e.target.files[0];
-                    if(!file) return;
-                    const reader = new FileReader();
-                    reader.onload = ev => {
-                        const note = prompt('Add a note:') || '';
-                        this.data.photos.unshift({
-                            url: ev.target.result,
-                            note,
-                            date: new Date().toISOString()
-                        });
-                        this.save(); this.render();
-                    };
-                    reader.readAsDataURL(file);
-                };
-                input.click();
+        toggleGoal(id) {
+            const g = this.data.goals.find(x => x.id === id);
+            if (g) {
+                g.done = !g.done;
+                localStorage.setItem('she_g', JSON.stringify(this.data.goals));
+                this.render();
             }
         }
 
-        const app = new Hub();
+        render_habits() {
+            if (this.form === 'habit') return this.renderHabitForm();
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            return `
+                <div class="max-w-2xl mx-auto">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">✅ Habits</h2>
+                            <button onclick="app.form='habit'; app.render()" class="she-button text-white px-4 py-2 rounded-lg">+ New</button>
+                        </div>
+                    </div>
+                    ${this.data.habits.length === 0 ? '<div class="bg-white rounded-xl shadow-lg p-12 text-center"><p class="text-gray-600">No habits yet</p></div>' : ''}
+                    ${this.data.habits.map(h => {
+                        const checked = this.data.logs[today]?.[h.id] || false;
+                        const streak = this.calcStreak(h.id);
+                        return `
+                            <div class="bg-white rounded-xl shadow-lg p-4 mb-3 border-2 ${checked ? 'she-coral-border she-coral-light' : 'border-gray-200'}">
+                                <div class="flex items-center gap-4">
+                                    <button onclick="app.toggleHabit(${h.id})" class="w-8 h-8 rounded-full border-2 she-coral-border flex items-center justify-center ${checked ? 'she-coral-bg text-white' : ''}">
+                                        ${checked ? '✓' : ''}
+                                    </button>
+                                    <div class="flex-1">
+                                        <h3 class="font-bold ${checked ? 'line-through' : ''}">${h.name}</h3>
+                                        <p class="text-sm text-gray-600">${h.freq}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-2xl font-bold she-coral">${streak}</p>
+                                        <p class="text-xs text-gray-600">days</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        renderHabitForm() {
+            return `
+                <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4">New Habit</h2>
+                    <input type="text" id="name" placeholder="Habit name (e.g., Drink 2L water)" class="w-full px-3 py-2 border-2 rounded-lg mb-3">
+                    <select id="freq" class="w-full px-3 py-2 border-2 rounded-lg mb-3">
+                        <option>Daily</option>
+                        <option>3x per week</option>
+                        <option>5x per week</option>
+                    </select>
+                    <div class="flex gap-3">
+                        <button onclick="app.saveHabit()" class="flex-1 she-button text-white py-3 rounded-lg">Save Habit</button>
+                        <button onclick="app.form=null; app.render()" class="px-6 py-3 border-2 she-coral-border she-coral rounded-lg">Cancel</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        saveHabit() {
+            const h = {
+                id: Date.now(),
+                name: document.getElementById('name').value,
+                freq: document.getElementById('freq').value
+            };
+            this.data.habits.push(h);
+            localStorage.setItem('she_h', JSON.stringify(this.data.habits));
+            this.form = null;
+            this.render();
+        }
+
+        toggleHabit(id) {
+            const today = new Date().toISOString().split('T')[0];
+            if (!this.data.logs[today]) this.data.logs[today] = {};
+            this.data.logs[today][id] = !this.data.logs[today][id];
+            localStorage.setItem('she_l', JSON.stringify(this.data.logs));
+            this.render();
+        }
+
+        calcTotal() {
+            if (this.data.measures.length < 2) return 0;
+            const latest = this.data.measures[0];
+            const first = this.data.measures[this.data.measures.length - 1];
+            let total = 0;
+            ['waist','hips','bust','leftArm','rightArm','leftThigh','rightThigh','leftCalf','rightCalf'].forEach(k => {
+                if (latest[k] && first[k]) total += first[k] - latest[k];
+            });
+            return total.toFixed(1);
+        }
+
+        todayHabits() {
+            const today = new Date().toISOString().split('T')[0];
+            const done = Object.values(this.data.logs[today] || {}).filter(Boolean).length;
+            return { done, total: this.data.habits.length };
+        }
+
+        calcStreak(id) {
+            let streak = 0;
+            const dates = Object.keys(this.data.logs).sort().reverse();
+            for (let date of dates) {
+                if (this.data.logs[date][id]) streak++;
+                else break;
+            }
+            return streak;
+        }
+    }
+
+    const app = new App();
     </script>
 </body>
 </html>
